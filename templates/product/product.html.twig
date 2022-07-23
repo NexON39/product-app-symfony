@@ -2,12 +2,44 @@
 
 {% block body %}
 
+    <a href="{{ path('app_logout') }}">LOGOUT</a>
+
     {% for message in app.flashes('succes') %}
         <div class="alert alert-success">
             {{ message }}
         </div>
     {% endfor %}
 
-    {{ form(form) }}
+    <h1>Add new product</h1>
 
+    {{ form(form) }}
+    
+    {# {{ dump(product.opinion) }} #}
+
+<div class="table-responsive">
+    <table class="table table-striped table-dark">
+        <thead>
+            <tr>
+                <th scope="col">ID</th>
+                <th scope="col">Owner Email</th>
+                <th scope="col">Product Name</th>
+                <th scope="col">Product Price</th>
+                <th scope="col">Product Opinions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for product in products %}
+                <tr>
+                    <th scope="row">{{ product.id }}</th>
+                    <td>{{ product.ownerName }}</td>
+                    <td>{{ product.productName }}</td>
+                    <td>{{ product.price }} zł</td>
+                    <td>{{ product.opinions }}</td>
+                    <td><a href="{{ path('app_product_edit', {id: product.id}) }}">EDIT</a></td>
+                    <td><a href="{{ path('app_product_opinion', {id: product.id}) }}">ADD OPINION</a></td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
 {% endblock %}

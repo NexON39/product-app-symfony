@@ -3,6 +3,7 @@
 namespace App\Entity;
 
 use App\Repository\ProductRepository;
+use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity(repositoryClass: ProductRepository::class)]
@@ -21,6 +22,9 @@ class Product
 
     #[ORM\Column]
     private ?int $price = null;
+
+    #[ORM\Column(length: 10000, nullable: true)]
+    private ?string $opinions = null;
 
     public function getId(): ?int
     {
@@ -59,6 +63,18 @@ class Product
     public function setPrice(int $price): self
     {
         $this->price = $price;
+
+        return $this;
+    }
+
+    public function getOpinions(): ?string
+    {
+        return $this->opinions;
+    }
+
+    public function setOpinions(?string $opinions): self
+    {
+        $this->opinions = $opinions;
 
         return $this;
     }

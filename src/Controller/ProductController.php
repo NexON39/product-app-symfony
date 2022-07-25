@@ -15,6 +15,7 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
+// brak testów (PHP)
 class ProductController extends AbstractController
 {
     #[Route('/product', name: 'app_product')]
@@ -37,6 +38,10 @@ class ProductController extends AbstractController
 
         // add product
         $form->handleRequest($request);
+
+        // form powinien mieć data class określony, żeby zbindować formularz na encję (Symfony)
+        // wtedy nie trzeba danych przepisywać z formularza, na encję (Symfony)
+        // brak obsłużenia niepoprawnego formularza (PHP)
         if ($form->isSubmitted() && $form->isValid()) {
 
             // get data from form
@@ -48,6 +53,8 @@ class ProductController extends AbstractController
             /**
              * Validate
              */
+
+            // łączenie walidatorów i formularzy, to nienajlepszy pomysł (Symfony)
             $errors = $validator->validate($product);
             if (count($errors) > 0) {
                 $errorsString = (string) $errors;
@@ -55,27 +62,38 @@ class ProductController extends AbstractController
             }
 
             //get user email
+
+            // naruszenie DRY! (PHP)
+            // nieobsłużony wyjątek null pointer exception (PHP)
             $userName = $this->getUser()->getUserIdentifier();
 
+            // mnóstwo kodu inline + niepotrzebne przypisania (PHP)
             $product->setOwnerName($userName);
             $productName = $data['product_name'];
             $product->setProductName($productName);
             $productNameLength = strlen($productName);
+
+            // logika obliczania cen inline (PHP), nie w serwisie (Symfony)
             if ($productNameLength % 2 == 0) {
                 $product->setPrice(20);
             } else {
                 $product->setPrice(10);
             }
+
             $entityManager->persist($product);
             $entityManager->flush();
 
             //result message
+
+            // brak translacji (Symfony)
             $this->addFlash(
                 'succes',
                 'Your product was added'
             );
 
             //log
+
+            // niepotrzebny log (Symfony)
             $logger->info("$userName added $productName");
 
             //redirect to route
@@ -86,6 +104,8 @@ class ProductController extends AbstractController
         $products = $productRepository->findAll();
 
         //log
+
+        // niepotrzebny log (Symfony)
         $logger->info("$userName displayed a list of products");
 
         // render form and products
@@ -102,6 +122,8 @@ class ProductController extends AbstractController
         $id = $request->get('id');
 
         // product validation
+
+        // tu najlpiej by było od razu wyszukać po użytkowniku (DB)
         $product = $productRepository->find($id);
         if (!$product) {
             throw $this->createNotFoundException(
@@ -110,6 +132,8 @@ class ProductController extends AbstractController
         }
 
         //build form
+
+        // brak danych do edycji w formularzu (Symfony)
         $form = $this->createFormBuilder()
             ->add('product_name', TextType::class, [
                 'required' => true,
@@ -137,8 +161,13 @@ class ProductController extends AbstractController
             $data = $form->getData();
 
             //get user email
+
+            // exception (PHP)
             $userName = $this->getUser()->getUserIdentifier();
 
+            // walidacja użytkownika inline (PHP), bez serwisu (Symfony)
+            // edycja powinna być zablokowana wcześniej, przed renderowaniem (PHP)
+            // gdyby formularz zawierał dane, to edytujący zobaczy wszystkie dane produktu, a nie powinien (PHP)
             if ((string)$product->getOwnerName() == (string)$userName) {
                 $entityManager = $doctrine->getManager();
                 $product->setProductName($data['product_name']);
@@ -158,6 +187,8 @@ class ProductController extends AbstractController
                 //redirect to route
                 return $this->redirect($this->generateUrl('app_product'));
             } else {
+                // niepotrzebny else (PHP)
+
                 //result message
                 $this->addFlash(
                     'succes',
@@ -213,11 +244,14 @@ class ProductController extends AbstractController
             //get user email
             $userName = $this->getUser()->getUserIdentifier();
 
+            // walidacja inline, DRY
             if ((string)$product->getOwnerName() != (string)$userName) {
                 $entityManager = $doctrine->getManager();
 
                 $newProductOpinion = (string)$data['opinion'];
                 $oldProductOpinioon = (string)$product->getOpinions();
+
+                // jeśli opinia będzie za długa, zostanie ucięta, bo mamy tylko 10000 znaków (DB)
                 $productOpinion = $oldProductOpinioon . ' • ' . $newProductOpinion;
 
                 $product->setOpinions($productOpinion);
@@ -234,6 +268,8 @@ class ProductController extends AbstractController
                 //redirect to route
                 return $this->redirect($this->generateUrl('app_product'));
             } else {
+                // niepotrzebny else (PHP)
+
                 //result message
                 $this->addFlash(
                     'succes',

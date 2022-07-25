@@ -14,6 +14,8 @@ use Symfony\Component\Validator\Constraints\NotBlank;
 
 class RegistrationFormType extends AbstractType
 {
+    // tu ładnie, przypuszczam, że kod z dokumentacji
+    // do usunięcia tylko zbędne komentarze
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         $builder

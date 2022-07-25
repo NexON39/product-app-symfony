@@ -21,6 +21,8 @@ class ProductRepository extends ServiceEntityRepository
         parent::__construct($registry, Product::class);
     }
 
+    // nieużywana funkcja (PHP)
+    // można by jej użyć w kontrolerze
     public function add(Product $entity, bool $flush = false): void
     {
         $this->getEntityManager()->persist($entity);
@@ -30,6 +32,7 @@ class ProductRepository extends ServiceEntityRepository
         }
     }
 
+    // nieużywana funkcja (PHP), nie mamy usuwania produktów
     public function remove(Product $entity, bool $flush = false): void
     {
         $this->getEntityManager()->remove($entity);
@@ -38,6 +41,8 @@ class ProductRepository extends ServiceEntityRepository
             $this->getEntityManager()->flush();
         }
     }
+
+    // niepotrzebny kod (PHP)
 
 //    /**
 //     * @return Product[] Returns an array of Product objects

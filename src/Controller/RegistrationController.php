@@ -20,9 +20,12 @@ class RegistrationController extends AbstractController
     public function register(Request $request, UserPasswordHasherInterface $userPasswordHasher, UserAuthenticatorInterface $userAuthenticator, AppCustomAuthenticator $authenticator, EntityManagerInterface $entityManager): Response
     {
         $user = new User();
+
+        // tu fajnie ogarnięty formularz, poprawnie (Symfony)
         $form = $this->createForm(RegistrationFormType::class, $user);
         $form->handleRequest($request);
 
+        // i walidacja w formularzu (Symfony)
         if ($form->isSubmitted() && $form->isValid()) {
             // encode the plain password
             $user->setPassword(
@@ -34,6 +37,8 @@ class RegistrationController extends AbstractController
 
             $entityManager->persist($user);
             $entityManager->flush();
+
+            // niepotrzebny komentarz z dokumentacji (PHP)
             // do anything else you need here, like send an email
 
             return $userAuthenticator->authenticateUser(

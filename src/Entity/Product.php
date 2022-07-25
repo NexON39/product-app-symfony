@@ -14,15 +14,20 @@ class Product
     #[ORM\Column()]
     private ?int $id = null;
 
+    // nazwa użytkownika zamiast relacji -> po zmianie nazwy użytkownika, przestanie działać
+    // tu powinna być relacja do encji użytkownika, użytkownik nie powinien być pusty
     #[ORM\Column(length: 255)]
     private ?string $ownerName = null;
 
+    // nazwa produktu nie powinna być pusta
     #[ORM\Column(length: 255)]
     private ?string $productName = null;
 
+    // cena nie powinna być pusta, powinna być typu float
     #[ORM\Column]
     private ?int $price = null;
 
+    // tu powinna być kolekcja, relacja do osobnej encji Opinion, nie string
     #[ORM\Column(length: 10000, nullable: true)]
     private ?string $opinions = null;
 

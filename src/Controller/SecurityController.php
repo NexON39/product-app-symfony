@@ -12,9 +12,13 @@ class SecurityController extends AbstractController
     #[Route(path: '/login', name: 'app_login')]
     public function login(AuthenticationUtils $authenticationUtils): Response
     {
+        // dlaczego zakomentowane? (PHP)
+
         // if ($this->getUser()) {
         //     return $this->redirectToRoute('target_path');
         // }
+
+        // niepotrzebne komentarze (PHP)
 
         // get the login error if there is one
         $error = $authenticationUtils->getLastAuthenticationError();

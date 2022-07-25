@@ -9,8 +9,7 @@ class ResponsesTest extends WebTestCase
     public function testLoginPageResponse(): void
     {
         $client = static::createClient();
-        // niepotrzebne przypisanie (PHP)
-        $crawler = $client->request('GET', '/login');
+        $client->request('GET', '/login');
 
         $this->assertResponseIsSuccessful();
         $this->assertSelectorTextContains('h1', 'Please sign in');
@@ -19,8 +18,7 @@ class ResponsesTest extends WebTestCase
     public function testRegisterPageResponse(): void
     {
         $client = static::createClient();
-        // niepotrzebne przypisanie (PHP)
-        $crawler = $client->request('GET', '/register');
+        $client->request('GET', '/register');
 
         $this->assertResponseIsSuccessful();
         $this->assertSelectorTextContains('h1', 'Register');

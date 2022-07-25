@@ -50,16 +50,6 @@ class ProductController extends AbstractController
             $entityManager = $doctrine->getManager();
 
             $product = new Product;
-            /**
-             * Validate
-             */
-
-            // łączenie walidatorów i formularzy, to nienajlepszy pomysł (Symfony)
-            $errors = $validator->validate($product);
-            if (count($errors) > 0) {
-                $errorsString = (string) $errors;
-                return new Response($errorsString);
-            }
 
             //get user email
 
@@ -69,12 +59,10 @@ class ProductController extends AbstractController
 
             // mnóstwo kodu inline + niepotrzebne przypisania (PHP)
             $product->setOwnerName($userName);
-            $productName = $data['product_name'];
-            $product->setProductName($productName);
-            $productNameLength = strlen($productName);
+            $product->setProductName($data['product_name']);
 
             // logika obliczania cen inline (PHP), nie w serwisie (Symfony)
-            if ($productNameLength % 2 == 0) {
+            if (strlen($data['product_name']) % 2 == 0) {
                 $product->setPrice(20);
             } else {
                 $product->setPrice(10);
@@ -91,22 +79,12 @@ class ProductController extends AbstractController
                 'Your product was added'
             );
 
-            //log
-
-            // niepotrzebny log (Symfony)
-            $logger->info("$userName added $productName");
-
             //redirect to route
             return $this->redirect($this->generateUrl('app_product'));
         }
 
         // get all product list
         $products = $productRepository->findAll();
-
-        //log
-
-        // niepotrzebny log (Symfony)
-        $logger->info("$userName displayed a list of products");
 
         // render form and products
         return $this->render('product/product.html.twig', [
@@ -267,21 +245,19 @@ class ProductController extends AbstractController
 
                 //redirect to route
                 return $this->redirect($this->generateUrl('app_product'));
-            } else {
-                // niepotrzebny else (PHP)
-
-                //result message
-                $this->addFlash(
-                    'succes',
-                    'You cannot add a review to your product'
-                );
-
-                //log
-                $logger->info("$userName added reviews to product id $id");
-
-                //redirect to route
-                return $this->redirect($this->generateUrl('app_product'));
             }
+
+            //result message
+            $this->addFlash(
+                'succes',
+                'You cannot add a review to your product'
+            );
+
+            //log
+            $logger->info("$userName added reviews to product id $id");
+
+            //redirect to route
+            return $this->redirect($this->generateUrl('app_product'));
         }
 
         return $this->render('product/product_opinion.html.twig', [

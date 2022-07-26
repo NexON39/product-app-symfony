@@ -3,6 +3,9 @@
 namespace App\Controller;
 
 use App\Entity\Product;
+use App\Form\ProductAddType;
+use App\Form\ProductEditType;
+use App\Form\ProductOpinionType;
 use App\Repository\ProductRepository;
 use Doctrine\Persistence\ManagerRegistry;
 use Exception;
@@ -22,6 +25,13 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 // brak testów (PHP)
 class ProductController extends AbstractController
 {
+    public function formNotNullValidate($productName)
+    {
+        if ($productName == NULL) {
+            return true;
+        }
+    }
+
     public function getCurrentUser()
     {
         try {
@@ -42,36 +52,33 @@ class ProductController extends AbstractController
         //get user email
         $userName = $this->getCurrentUser();
 
-        //build form
-        $form = $this->createFormBuilder()
-            ->add('product_name', TextType::class, [
-                'required' => true
-            ])
-            ->add('add', SubmitType::class, [
-                'attr' => [
-                    'class' => 'btn btn-primary'
-                ]
-            ])
-            ->getForm();
+        // product init
+        $product = new Product;
 
-        // add product
+        // build form and handle request
+        $form = $this->createForm(ProductAddType::class, $product);
         $form->handleRequest($request);
 
-        // form powinien mieć data class określony, żeby zbindować formularz na encję (Symfony)
-        // wtedy nie trzeba danych przepisywać z formularza, na encję (Symfony)
-        // brak obsłużenia niepoprawnego formularza (PHP)
         if ($form->isSubmitted() && $form->isValid()) {
 
-            // get data from form
-            $data = $form->getData();
+            // check if null
+            if ($this->formNotNullValidate($form->get('productName')->getData())) {
+
+                //result message
+                $this->addFlash(
+                    'succes',
+                    $translator->trans('Product can not be null')
+                );
+
+                //redirect to route
+                return $this->redirect($this->generateUrl('app_product'));
+            }
 
             $entityManager = $doctrine->getManager();
 
-            $product = new Product;
-
             $product->setOwnerName($userName);
-            $product->setProductName($data['product_name']);
-            $product->setPrice($priceGenerator->getProductPrice($data['product_name']));
+            $product->setProductName($form->get('productName')->getData());
+            $product->setPrice($priceGenerator->getProductPrice($form->get('productName')->getData()));
 
             $entityManager->persist($product);
             $entityManager->flush();
@@ -125,40 +132,18 @@ class ProductController extends AbstractController
             return $this->redirect($this->generateUrl('app_product'));
         }
 
-        //build form
-        $form = $this->createFormBuilder()
-            ->add('product_name', TextType::class, [
-                'required' => true,
-                'attr' => [
-                    'placeholder' => $product->getProductName()
-                ]
-            ])
-            ->add('price', NumberType::class, [
-                'required' => true,
-                'attr' => [
-                    'placeholder' => $product->getPrice()
-                ]
-            ])
-            ->add('edit', SubmitType::class, [
-                'attr' => [
-                    'class' => 'btn btn-primary'
-                ]
-            ])
-            ->getForm();
-
+        // build form and handle request
+        $form = $this->createForm(ProductEditType::class, $product);
         $form->handleRequest($request);
         if ($form->isSubmitted() && $form->isValid()) {
-
-            // get data from form
-            $data = $form->getData();
 
             // product user validate
             if ($productUserValidation->productEditValidate($product->getOwnerName(), $userName)) {
 
                 $entityManager = $doctrine->getManager();
 
-                $product->setProductName($data['product_name']);
-                $product->setPrice($data['price']);
+                $product->setProductName($form->get('productName')->getData());
+                $product->setPrice($form->get('price')->getData());
 
                 $entityManager->persist($product);
                 $entityManager->flush();
@@ -201,33 +186,17 @@ class ProductController extends AbstractController
             );
         }
 
-        //build form
-        $form = $this->createFormBuilder()
-            ->add('opinion', TextType::class, [
-                'required' => true,
-                'attr' => [
-                    $translator->trans('Enter new opinion for this product')
-                ]
-            ])
-            ->add('add', SubmitType::class, [
-                'attr' => [
-                    'class' => 'btn btn-primary'
-                ]
-            ])
-            ->getForm();
-
+        // build form and handle request
+        $form = $this->createForm(ProductOpinionType::class, $product);
         $form->handleRequest($request);
         if ($form->isSubmitted() && $form->isValid()) {
-
-            // get data from form
-            $data = $form->getData();
 
             // product user validate
             if ($productUserValidation->productOpinionValidate($product->getOwnerName(), $userName)) {
 
                 $entityManager = $doctrine->getManager();
 
-                $newProductOpinion = (string)$data['opinion'];
+                $newProductOpinion = (string)$form->get('opinions')->getData();
                 $oldProductOpinioon = (string)$product->getOpinions();
 
                 // jeśli opinia będzie za długa, zostanie ucięta, bo mamy tylko 10000 znaków (DB)

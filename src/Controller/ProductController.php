@@ -5,6 +5,7 @@ namespace App\Controller;
 use App\Entity\Product;
 use App\Repository\ProductRepository;
 use Doctrine\Persistence\ManagerRegistry;
+use Exception;
 use Psr\Log\LoggerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\Form\Extension\Core\Type\NumberType;
@@ -14,15 +15,32 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
+use App\Service\PriceGenerator;
+use App\Service\ProductUserValidation;
+use Symfony\Contracts\Translation\TranslatorInterface;
 
 // brak testów (PHP)
 class ProductController extends AbstractController
 {
+    public function getCurrentUser()
+    {
+        try {
+            $currentUser = $this->getUser()->getUserIdentifier();
+            if (isset($currentUser)) {
+                return $currentUser;
+            } else {
+                throw new Exception('User ' . $currentUser . ' not found');
+            }
+        } catch (Exception $e) {
+            return $e->getMessage();
+        }
+    }
+
     #[Route('/product', name: 'app_product')]
-    public function index(Request $request, ManagerRegistry $doctrine, ProductRepository $productRepository, LoggerInterface $logger, ValidatorInterface $validator)
+    public function index(Request $request, ManagerRegistry $doctrine, ProductRepository $productRepository, ValidatorInterface $validator, PriceGenerator $priceGenerator, TranslatorInterface $translator)
     {
         //get user email
-        $userName = $this->getUser()->getUserIdentifier();
+        $userName = $this->getCurrentUser();
 
         //build form
         $form = $this->createFormBuilder()
@@ -51,32 +69,17 @@ class ProductController extends AbstractController
 
             $product = new Product;
 
-            //get user email
-
-            // naruszenie DRY! (PHP)
-            // nieobsłużony wyjątek null pointer exception (PHP)
-            $userName = $this->getUser()->getUserIdentifier();
-
-            // mnóstwo kodu inline + niepotrzebne przypisania (PHP)
             $product->setOwnerName($userName);
             $product->setProductName($data['product_name']);
-
-            // logika obliczania cen inline (PHP), nie w serwisie (Symfony)
-            if (strlen($data['product_name']) % 2 == 0) {
-                $product->setPrice(20);
-            } else {
-                $product->setPrice(10);
-            }
+            $product->setPrice($priceGenerator->getProductPrice($data['product_name']));
 
             $entityManager->persist($product);
             $entityManager->flush();
 
             //result message
-
-            // brak translacji (Symfony)
             $this->addFlash(
                 'succes',
-                'Your product was added'
+                $translator->trans('Your product was added')
             );
 
             //redirect to route
@@ -94,35 +97,46 @@ class ProductController extends AbstractController
     }
 
     #[Route('/product/edit/{id}', name: 'app_product_edit')]
-    public function edit(Request $request, ManagerRegistry $doctrine, ProductRepository $productRepository, LoggerInterface $logger, ValidatorInterface $validator)
+    public function edit(Request $request, ManagerRegistry $doctrine, ProductRepository $productRepository, LoggerInterface $logger, ValidatorInterface $validator, ProductUserValidation $productUserValidation, TranslatorInterface $translator)
     {
         // get id from route param
         $id = $request->get('id');
 
-        // product validation
+        //get user email
+        $userName = $this->getCurrentUser();
 
+        // product validation
         // tu najlpiej by było od razu wyszukać po użytkowniku (DB)
         $product = $productRepository->find($id);
         if (!$product) {
             throw $this->createNotFoundException(
-                'No product found for id ' . $id
+                $translator->trans('No product found for id') . ' ' . $id
             );
         }
 
-        //build form
+        if ((string)$product->getOwnerName() != (string)$userName) {
+            //result message
+            $this->addFlash(
+                'succes',
+                $translator->trans('You cannot edit a product that is not yours')
+            );
 
-        // brak danych do edycji w formularzu (Symfony)
+            //redirect to route
+            return $this->redirect($this->generateUrl('app_product'));
+        }
+
+        //build form
         $form = $this->createFormBuilder()
             ->add('product_name', TextType::class, [
                 'required' => true,
                 'attr' => [
-                    'placeholder' => 'Enter new product name'
+                    'placeholder' => $product->getProductName()
                 ]
             ])
             ->add('price', NumberType::class, [
                 'required' => true,
                 'attr' => [
-                    'placeholder' => 'Enter new price'
+                    'placeholder' => $product->getPrice()
                 ]
             ])
             ->add('edit', SubmitType::class, [
@@ -138,25 +152,21 @@ class ProductController extends AbstractController
             // get data from form
             $data = $form->getData();
 
-            //get user email
+            // product user validate
+            if ($productUserValidation->productEditValidate($product->getOwnerName(), $userName)) {
 
-            // exception (PHP)
-            $userName = $this->getUser()->getUserIdentifier();
-
-            // walidacja użytkownika inline (PHP), bez serwisu (Symfony)
-            // edycja powinna być zablokowana wcześniej, przed renderowaniem (PHP)
-            // gdyby formularz zawierał dane, to edytujący zobaczy wszystkie dane produktu, a nie powinien (PHP)
-            if ((string)$product->getOwnerName() == (string)$userName) {
                 $entityManager = $doctrine->getManager();
+
                 $product->setProductName($data['product_name']);
                 $product->setPrice($data['price']);
+
                 $entityManager->persist($product);
                 $entityManager->flush();
 
                 //result message
                 $this->addFlash(
                     'succes',
-                    'Your product was edited'
+                    $translator->trans('Your product was edited')
                 );
 
                 //log
@@ -164,20 +174,10 @@ class ProductController extends AbstractController
 
                 //redirect to route
                 return $this->redirect($this->generateUrl('app_product'));
-            } else {
-                // niepotrzebny else (PHP)
-
-                //result message
-                $this->addFlash(
-                    'succes',
-                    'You cannot edit a product that is not yours'
-                );
-
-                //redirect to route
-                return $this->redirect($this->generateUrl('app_product'));
             }
         }
 
+        // form render
         return $this->render('product/product_edit.html.twig', [
             'form' => $form->createView(),
             'product_id' => $id
@@ -185,16 +185,19 @@ class ProductController extends AbstractController
     }
 
     #[Route('/product/opinion/{id}', name: 'app_product_opinion')]
-    public function opinion(Request $request, ManagerRegistry $doctrine, ProductRepository $productRepository, LoggerInterface $logger, ValidatorInterface $validator)
+    public function opinion(Request $request, ManagerRegistry $doctrine, ProductRepository $productRepository, LoggerInterface $logger, ValidatorInterface $validator, ProductUserValidation $productUserValidation, TranslatorInterface $translator)
     {
         // get id from route param
         $id = $request->get('id');
+
+        //get user email
+        $userName = $this->getCurrentUser();
 
         // product validation
         $product = $productRepository->find($id);
         if (!$product) {
             throw $this->createNotFoundException(
-                'No product found for id ' . $id
+                $translator->trans('No product found for id') . ' ' . $id
             );
         }
 
@@ -203,7 +206,7 @@ class ProductController extends AbstractController
             ->add('opinion', TextType::class, [
                 'required' => true,
                 'attr' => [
-                    'placeholder' => 'Enter new opinion for this product'
+                    $translator->trans('Enter new opinion for this product')
                 ]
             ])
             ->add('add', SubmitType::class, [
@@ -219,11 +222,9 @@ class ProductController extends AbstractController
             // get data from form
             $data = $form->getData();
 
-            //get user email
-            $userName = $this->getUser()->getUserIdentifier();
+            // product user validate
+            if ($productUserValidation->productOpinionValidate($product->getOwnerName(), $userName)) {
 
-            // walidacja inline, DRY
-            if ((string)$product->getOwnerName() != (string)$userName) {
                 $entityManager = $doctrine->getManager();
 
                 $newProductOpinion = (string)$data['opinion'];
@@ -240,7 +241,7 @@ class ProductController extends AbstractController
                 //result message
                 $this->addFlash(
                     'succes',
-                    'Successfully added reviews'
+                    $translator->trans('Successfully added reviews')
                 );
 
                 //redirect to route
@@ -250,7 +251,7 @@ class ProductController extends AbstractController
             //result message
             $this->addFlash(
                 'succes',
-                'You cannot add a review to your product'
+                $translator->trans('You cannot add a review to your product')
             );
 
             //log
@@ -260,6 +261,7 @@ class ProductController extends AbstractController
             return $this->redirect($this->generateUrl('app_product'));
         }
 
+        // form render
         return $this->render('product/product_opinion.html.twig', [
             'form' => $form->createView(),
             'product_id' => $id

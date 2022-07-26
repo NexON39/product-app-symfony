@@ -2,7 +2,9 @@
 
 namespace App\Service;
 
-class PriceGenerator
+use App\Service\Interfaces\PriceGeneratorInterface;
+
+class PriceGenerator implements PriceGeneratorInterface
 {
     public function getProductPrice($product): int
     {

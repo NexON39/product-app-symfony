@@ -3,6 +3,7 @@
 namespace App\Controller;
 
 use App\Entity\Product;
+use App\Entity\Reviews;
 use App\Form\ProductAddType;
 use App\Form\ProductEditType;
 use App\Form\ProductOpinionType;
@@ -47,7 +48,7 @@ class ProductController extends AbstractController
     }
 
     #[Route('/product', name: 'app_product')]
-    public function index(Request $request, ManagerRegistry $doctrine, ProductRepository $productRepository, ValidatorInterface $validator, PriceGenerator $priceGenerator, TranslatorInterface $translator)
+    public function index(Request $request, ManagerRegistry $doctrine, ProductRepository $productRepository, PriceGenerator $priceGenerator, TranslatorInterface $translator)
     {
         //get user email
         $userName = $this->getCurrentUser();
@@ -67,19 +68,22 @@ class ProductController extends AbstractController
                 //result message
                 $this->addFlash(
                     'succes',
-                    $translator->trans('Product can not be null')
+                    $translator->trans('Input can not be null')
                 );
 
                 //redirect to route
                 return $this->redirect($this->generateUrl('app_product'));
             }
 
+            // entity init
             $entityManager = $doctrine->getManager();
 
+            // add product
             $product->setOwnerName($userName);
             $product->setProductName($form->get('productName')->getData());
             $product->setPrice($priceGenerator->getProductPrice($form->get('productName')->getData()));
 
+            // execute
             $entityManager->persist($product);
             $entityManager->flush();
 
@@ -104,7 +108,7 @@ class ProductController extends AbstractController
     }
 
     #[Route('/product/edit/{id}', name: 'app_product_edit')]
-    public function edit(Request $request, ManagerRegistry $doctrine, ProductRepository $productRepository, LoggerInterface $logger, ValidatorInterface $validator, ProductUserValidation $productUserValidation, TranslatorInterface $translator)
+    public function edit(Request $request, ManagerRegistry $doctrine, ProductRepository $productRepository, LoggerInterface $logger, ProductUserValidation $productUserValidation, TranslatorInterface $translator)
     {
         // get id from route param
         $id = $request->get('id');
@@ -137,14 +141,30 @@ class ProductController extends AbstractController
         $form->handleRequest($request);
         if ($form->isSubmitted() && $form->isValid()) {
 
+            // check if null
+            if ($this->formNotNullValidate($form->get('productName')->getData())) {
+
+                //result message
+                $this->addFlash(
+                    'succes',
+                    $translator->trans('Input can not be null')
+                );
+
+                //redirect to route
+                return $this->redirect($this->generateUrl('app_product'));
+            }
+
             // product user validate
             if ($productUserValidation->productEditValidate($product->getOwnerName(), $userName)) {
 
+                // entity init
                 $entityManager = $doctrine->getManager();
 
+                // edit product
                 $product->setProductName($form->get('productName')->getData());
                 $product->setPrice($form->get('price')->getData());
 
+                // execute
                 $entityManager->persist($product);
                 $entityManager->flush();
 
@@ -194,17 +214,16 @@ class ProductController extends AbstractController
             // product user validate
             if ($productUserValidation->productOpinionValidate($product->getOwnerName(), $userName)) {
 
+                // entity init
                 $entityManager = $doctrine->getManager();
 
-                $newProductOpinion = (string)$form->get('opinions')->getData();
-                $oldProductOpinioon = (string)$product->getOpinions();
+                // add review to product
+                $review = new Reviews;
+                $review->setReview((string)$form->get('opinions')->getData());
+                $review->setContent($product);
 
-                // jeśli opinia będzie za długa, zostanie ucięta, bo mamy tylko 10000 znaków (DB)
-                $productOpinion = $oldProductOpinioon . ' • ' . $newProductOpinion;
-
-                $product->setOpinions($productOpinion);
-
-                $entityManager->persist($product);
+                // execute
+                $entityManager->persist($review);
                 $entityManager->flush();
 
                 //result message
@@ -234,6 +253,30 @@ class ProductController extends AbstractController
         return $this->render('product/product_opinion.html.twig', [
             'form' => $form->createView(),
             'product_id' => $id
+        ]);
+    }
+
+    #[Route('/product/opinion/view/{id}', name: 'app_product_opinion_view')]
+    public function opinionShow(Request $request, ProductRepository $productRepository, TranslatorInterface $translator)
+    {
+        // get id from route param
+        $id = $request->get('id');
+
+        // product validation
+        $product = $productRepository->find($id);
+        if (!$product) {
+            throw $this->createNotFoundException(
+                $translator->trans('No product found for id') . ' ' . $id
+            );
+        }
+
+        // get reviews from product
+        $reviews = $product->getReviews();
+
+        // form render
+        return $this->render('product/product_opinion_view.html.twig', [
+            'product_id' => $id,
+            'reviews' => $reviews
         ]);
     }
 }

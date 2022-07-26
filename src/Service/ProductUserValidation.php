@@ -2,7 +2,9 @@
 
 namespace App\Service;
 
-class ProductUserValidation
+use App\Service\Interfaces\ProductUserValidationInterface;
+
+class ProductUserValidation implements ProductUserValidationInterface
 {
     public function productEditValidate(string $productOwnerName, string $currentUser): bool
     {

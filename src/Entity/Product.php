@@ -3,6 +3,8 @@
 namespace App\Entity;
 
 use App\Repository\ProductRepository;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
@@ -30,6 +32,14 @@ class Product
     // tu powinna być kolekcja, relacja do osobnej encji Opinion, nie string
     #[ORM\Column(length: 10000, nullable: true)]
     private ?string $opinions = null;
+
+    #[ORM\OneToMany(mappedBy: 'content', targetEntity: Reviews::class)]
+    private Collection $reviews;
+
+    public function __construct()
+    {
+        $this->reviews = new ArrayCollection();
+    }
 
     public function getId(): ?int
     {
@@ -80,6 +90,36 @@ class Product
     public function setOpinions(?string $opinions): self
     {
         $this->opinions = $opinions;
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Reviews>
+     */
+    public function getReviews(): Collection
+    {
+        return $this->reviews;
+    }
+
+    public function addReview(Reviews $review): self
+    {
+        if (!$this->reviews->contains($review)) {
+            $this->reviews[] = $review;
+            $review->setContent($this);
+        }
+
+        return $this;
+    }
+
+    public function removeReview(Reviews $review): self
+    {
+        if ($this->reviews->removeElement($review)) {
+            // set the owning side to null (unless already changed)
+            if ($review->getContent() === $this) {
+                $review->setContent(null);
+            }
+        }
 
         return $this;
     }

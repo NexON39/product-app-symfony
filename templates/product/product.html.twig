@@ -24,7 +24,6 @@
                 <th scope="col">Owner Email</th>
                 <th scope="col">Product Name</th>
                 <th scope="col">Product Price</th>
-                <th scope="col">Product Opinions</th>
             </tr>
         </thead>
         <tbody>
@@ -34,7 +33,7 @@
                     <td>{{ product.ownerName }}</td>
                     <td>{{ product.productName }}</td>
                     <td>{{ product.price }} zł</td>
-                    <td>{{ product.opinions }}</td>
+                    <td><a href="{{ path('app_product_opinion_view', {id: product.id}) }}">SHOW OPINION</a></td>
                     <td><a href="{{ path('app_product_edit', {id: product.id}) }}">EDIT</a></td>
                     <td><a href="{{ path('app_product_opinion', {id: product.id}) }}">ADD OPINION</a></td>
                 </tr>

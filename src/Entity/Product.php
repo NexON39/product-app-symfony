@@ -7,6 +7,7 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Validator\Constraints\NotNull;
 
 #[ORM\Entity(repositoryClass: ProductRepository::class)]
 class Product
@@ -18,20 +19,14 @@ class Product
 
     // nazwa użytkownika zamiast relacji -> po zmianie nazwy użytkownika, przestanie działać
     // tu powinna być relacja do encji użytkownika, użytkownik nie powinien być pusty
-    #[ORM\Column(length: 255)]
+    #[ORM\Column(length: 255, nullable: false)]
     private ?string $ownerName = null;
 
-    // nazwa produktu nie powinna być pusta
-    #[ORM\Column(length: 255)]
+    #[ORM\Column(length: 255, nullable: false)]
     private ?string $productName = null;
 
-    // cena nie powinna być pusta, powinna być typu float
-    #[ORM\Column]
-    private ?int $price = null;
-
-    // tu powinna być kolekcja, relacja do osobnej encji Opinion, nie string
-    #[ORM\Column(length: 10000, nullable: true)]
-    private ?string $opinions = null;
+    #[ORM\Column(nullable: false)]
+    private ?float $price = null;
 
     #[ORM\OneToMany(mappedBy: 'content', targetEntity: Reviews::class)]
     private Collection $reviews;
@@ -82,18 +77,6 @@ class Product
         return $this;
     }
 
-    public function getOpinions(): ?string
-    {
-        return $this->opinions;
-    }
-
-    public function setOpinions(?string $opinions): self
-    {
-        $this->opinions = $opinions;
-
-        return $this;
-    }
-
     /**
      * @return Collection<int, Reviews>
      */
@@ -115,12 +98,10 @@ class Product
     public function removeReview(Reviews $review): self
     {
         if ($this->reviews->removeElement($review)) {
-            // set the owning side to null (unless already changed)
             if ($review->getContent() === $this) {
                 $review->setContent(null);
             }
         }
-
         return $this;
     }
 }

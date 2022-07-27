@@ -3,7 +3,6 @@
 namespace App\Tests;
 
 use App\Repository\UserRepository;
-use Doctrine\ORM\EntityManager;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 
 class ProductControllerFormsTest extends WebTestCase

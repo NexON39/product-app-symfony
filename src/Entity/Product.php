@@ -17,8 +17,6 @@ class Product
     #[ORM\Column()]
     private ?int $id = null;
 
-    // nazwa użytkownika zamiast relacji -> po zmianie nazwy użytkownika, przestanie działać
-    // tu powinna być relacja do encji użytkownika, użytkownik nie powinien być pusty
     #[ORM\Column(length: 255, nullable: false)]
     private ?string $ownerName = null;
 
@@ -30,6 +28,9 @@ class Product
 
     #[ORM\OneToMany(mappedBy: 'content', targetEntity: Reviews::class)]
     private Collection $reviews;
+
+    #[ORM\ManyToOne(inversedBy: 'products')]
+    private ?User $userproduct = null;
 
     public function __construct()
     {
@@ -102,6 +103,18 @@ class Product
                 $review->setContent(null);
             }
         }
+        return $this;
+    }
+
+    public function getUserproduct(): ?User
+    {
+        return $this->userproduct;
+    }
+
+    public function setUserproduct(?User $userproduct): self
+    {
+        $this->userproduct = $userproduct;
+
         return $this;
     }
 }

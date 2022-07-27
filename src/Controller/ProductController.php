@@ -4,10 +4,12 @@ namespace App\Controller;
 
 use App\Entity\Product;
 use App\Entity\Reviews;
+use App\Entity\User;
 use App\Form\ProductAddType;
 use App\Form\ProductEditType;
 use App\Form\ProductOpinionType;
 use App\Repository\ProductRepository;
+use App\Repository\UserRepository;
 use Doctrine\Persistence\ManagerRegistry;
 use Exception;
 use Psr\Log\LoggerInterface;
@@ -16,12 +18,17 @@ use Symfony\Component\Form\Extension\Core\Type\NumberType;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\Security\Core\Security;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 use App\Service\PriceGenerator;
 use App\Service\ProductUserValidation;
+use Doctrine\ORM\EntityManager;
+use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Component\Security\Core\User\UserInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
+use Doctrine\ORM\Query\ResultSetMapping;
 
 // brak testów (PHP)
 class ProductController extends AbstractController
@@ -83,6 +90,10 @@ class ProductController extends AbstractController
             $product->setProductName($form->get('productName')->getData());
             $product->setPrice($priceGenerator->getProductPrice($form->get('productName')->getData()));
 
+            $user = new User;
+            $userId = $user->getId();
+            $product->setUserproduct($userId);
+
             // execute
             $entityManager->persist($product);
             $entityManager->flush();
@@ -120,9 +131,14 @@ class ProductController extends AbstractController
         // tu najlpiej by było od razu wyszukać po użytkowniku (DB)
         $product = $productRepository->find($id);
         if (!$product) {
-            throw $this->createNotFoundException(
-                $translator->trans('No product found for id') . ' ' . $id
+            //result message
+            $this->addFlash(
+                'succes',
+                $translator->trans('Product not found')
             );
+
+            //redirect to route
+            return $this->redirect($this->generateUrl('app_product'));
         }
 
         if ((string)$product->getOwnerName() != (string)$userName) {
@@ -201,9 +217,26 @@ class ProductController extends AbstractController
         // product validation
         $product = $productRepository->find($id);
         if (!$product) {
-            throw $this->createNotFoundException(
-                $translator->trans('No product found for id') . ' ' . $id
+            //result message
+            $this->addFlash(
+                'succes',
+                $translator->trans('Product not found')
             );
+
+            //redirect to route
+            return $this->redirect($this->generateUrl('app_product'));
+        }
+
+        // product user validate
+        if ($productUserValidation->productOpinionValidate($product->getOwnerName(), $userName) == false) {
+            //result message
+            $this->addFlash(
+                'succes',
+                $translator->trans('You cannot add a review to your product')
+            );
+
+            //redirect to route
+            return $this->redirect($this->generateUrl('app_product'));
         }
 
         // build form and handle request
@@ -211,39 +244,26 @@ class ProductController extends AbstractController
         $form->handleRequest($request);
         if ($form->isSubmitted() && $form->isValid()) {
 
-            // product user validate
-            if ($productUserValidation->productOpinionValidate($product->getOwnerName(), $userName)) {
+            // entity init
+            $entityManager = $doctrine->getManager();
 
-                // entity init
-                $entityManager = $doctrine->getManager();
+            // add review to product
+            $review = new Reviews;
+            $review->setReview((string)$form->get('opinions')->getData());
+            $review->setContent($product);
 
-                // add review to product
-                $review = new Reviews;
-                $review->setReview((string)$form->get('opinions')->getData());
-                $review->setContent($product);
+            // execute
+            $entityManager->persist($review);
+            $entityManager->flush();
 
-                // execute
-                $entityManager->persist($review);
-                $entityManager->flush();
-
-                //result message
-                $this->addFlash(
-                    'succes',
-                    $translator->trans('Successfully added reviews')
-                );
-
-                //redirect to route
-                return $this->redirect($this->generateUrl('app_product'));
-            }
+            //log
+            $logger->info("$userName added reviews to product id $id");
 
             //result message
             $this->addFlash(
                 'succes',
-                $translator->trans('You cannot add a review to your product')
+                $translator->trans('Successfully added reviews')
             );
-
-            //log
-            $logger->info("$userName added reviews to product id $id");
 
             //redirect to route
             return $this->redirect($this->generateUrl('app_product'));
@@ -265,9 +285,14 @@ class ProductController extends AbstractController
         // product validation
         $product = $productRepository->find($id);
         if (!$product) {
-            throw $this->createNotFoundException(
-                $translator->trans('No product found for id') . ' ' . $id
+            //result message
+            $this->addFlash(
+                'succes',
+                $translator->trans('Product not found')
             );
+
+            //redirect to route
+            return $this->redirect($this->generateUrl('app_product'));
         }
 
         // get reviews from product

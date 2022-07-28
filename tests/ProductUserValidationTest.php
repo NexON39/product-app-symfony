@@ -7,6 +7,7 @@ use App\Service\ProductUserValidation;
 
 class ProductUserValidationTest extends TestCase
 {
+    // testProductEditValidate
     public function testProductEditValidate(): void
     {
         $validate = new ProductUserValidation;
@@ -14,6 +15,7 @@ class ProductUserValidationTest extends TestCase
         $this->assertSame(true, $result);
     }
 
+    // testWrongProductEditValidate
     public function testWrongProductEditValidate(): void
     {
         $validate = new ProductUserValidation;
@@ -21,6 +23,7 @@ class ProductUserValidationTest extends TestCase
         $this->assertSame(false, $result);
     }
 
+    // testProductOpinionValidate
     public function testProductOpinionValidate(): void
     {
         $validate = new ProductUserValidation;
@@ -28,6 +31,7 @@ class ProductUserValidationTest extends TestCase
         $this->assertSame(false, $result);
     }
 
+    // testWrongProductOpinionValidate
     public function testWrongProductOpinionValidate(): void
     {
         $validate = new ProductUserValidation;

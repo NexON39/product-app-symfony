@@ -30,7 +30,6 @@ use Symfony\Component\Security\Core\User\UserInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use Doctrine\ORM\Query\ResultSetMapping;
 
-// brak testów (PHP)
 class ProductController extends AbstractController
 {
     public function formNotNullValidate($productName)
@@ -55,13 +54,18 @@ class ProductController extends AbstractController
     }
 
     #[Route('/product', name: 'app_product')]
-    public function index(Request $request, ManagerRegistry $doctrine, ProductRepository $productRepository, PriceGenerator $priceGenerator, TranslatorInterface $translator)
+    public function index(Request $request, ManagerRegistry $doctrine, ProductRepository $productRepository, PriceGenerator $priceGenerator, TranslatorInterface $translator, UserRepository $userRepository)
     {
         //get user email
         $userName = $this->getCurrentUser();
 
         // product init
         $product = new Product;
+
+        // find user
+        $user = $userRepository->findOneBy([
+            'email' => $userName
+        ]);
 
         // build form and handle request
         $form = $this->createForm(ProductAddType::class, $product);
@@ -89,10 +93,7 @@ class ProductController extends AbstractController
             $product->setOwnerName($userName);
             $product->setProductName($form->get('productName')->getData());
             $product->setPrice($priceGenerator->getProductPrice($form->get('productName')->getData()));
-
-            $user = new User;
-            $userId = $user->getId();
-            $product->setUserproduct($userId);
+            $product->setUserproduct($user);
 
             // execute
             $entityManager->persist($product);
@@ -128,7 +129,6 @@ class ProductController extends AbstractController
         $userName = $this->getCurrentUser();
 
         // product validation
-        // tu najlpiej by było od razu wyszukać po użytkowniku (DB)
         $product = $productRepository->find($id);
         if (!$product) {
             //result message
@@ -141,7 +141,7 @@ class ProductController extends AbstractController
             return $this->redirect($this->generateUrl('app_product'));
         }
 
-        if ((string)$product->getOwnerName() != (string)$userName) {
+        if ($productUserValidation->productEditValidate($product->getOwnerName(), $userName) == false) {
             //result message
             $this->addFlash(
                 'succes',
@@ -158,7 +158,7 @@ class ProductController extends AbstractController
         if ($form->isSubmitted() && $form->isValid()) {
 
             // check if null
-            if ($this->formNotNullValidate($form->get('productName')->getData())) {
+            if ($this->formNotNullValidate($form->get('productName')->getData()) == true || $this->formNotNullValidate($form->get('price')->getData()) == true) {
 
                 //result message
                 $this->addFlash(
@@ -170,32 +170,40 @@ class ProductController extends AbstractController
                 return $this->redirect($this->generateUrl('app_product'));
             }
 
-            // product user validate
-            if ($productUserValidation->productEditValidate($product->getOwnerName(), $userName)) {
-
-                // entity init
-                $entityManager = $doctrine->getManager();
-
-                // edit product
-                $product->setProductName($form->get('productName')->getData());
-                $product->setPrice($form->get('price')->getData());
-
-                // execute
-                $entityManager->persist($product);
-                $entityManager->flush();
-
+            // check if not negative number
+            if ($form->get('price')->getData() < 0) {
                 //result message
                 $this->addFlash(
                     'succes',
-                    $translator->trans('Your product was edited')
+                    $translator->trans('Input can not be negative number')
                 );
-
-                //log
-                $logger->info("$userName edited product id $id");
 
                 //redirect to route
                 return $this->redirect($this->generateUrl('app_product'));
             }
+
+            // entity init
+            $entityManager = $doctrine->getManager();
+
+            // edit product
+            $product->setProductName($form->get('productName')->getData());
+            $product->setPrice($form->get('price')->getData());
+
+            // execute
+            $entityManager->persist($product);
+            $entityManager->flush();
+
+            //result message
+            $this->addFlash(
+                'succes',
+                $translator->trans('Your product was edited')
+            );
+
+            //log
+            $logger->info("$userName edited product id $id");
+
+            //redirect to route
+            return $this->redirect($this->generateUrl('app_product'));
         }
 
         // form render

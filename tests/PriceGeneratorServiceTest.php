@@ -7,6 +7,7 @@ use App\Service\PriceGenerator;
 
 class PriceGeneratorServiceTest extends TestCase
 {
+    // testIsPriceGeneratorReturn10
     public function testIsPriceGeneratorReturn10(): void
     {
         $priceGenerator = new PriceGenerator;
@@ -14,6 +15,7 @@ class PriceGeneratorServiceTest extends TestCase
         $this->assertSame(10, $result);
     }
 
+    // testIsPriceGeneratorReturn20
     public function testIsPriceGeneratorReturn20(): void
     {
         $priceGenerator = new PriceGenerator;

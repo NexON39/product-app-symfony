@@ -9,6 +9,7 @@ use Symfony\Component\OptionsResolver\OptionsResolver;
 use Symfony\Component\Form\Extension\Core\Type\NumberType;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
+use Symfony\Component\Validator\Constraints\NotBlank;
 
 class ProductEditType extends AbstractType
 {
@@ -16,10 +17,16 @@ class ProductEditType extends AbstractType
     {
         $builder
             ->add('productName', TextType::class, [
-                'required' => true
+                'required' => true,
+                'mapped' => false,
+                'constraints' => new NotBlank(),
+                'empty_data' => ''
             ])
             ->add('price', NumberType::class, [
-                'required' => true
+                'required' => true,
+                'mapped' => false,
+                'constraints' => new NotBlank(),
+                'empty_data' => ''
             ])
             ->add('edit', SubmitType::class, [
                 'attr' => [

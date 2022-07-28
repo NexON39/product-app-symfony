@@ -6,6 +6,7 @@ use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 
 class ResponsesTest extends WebTestCase
 {
+    // testLoginPageResponse
     public function testLoginPageResponse(): void
     {
         $client = static::createClient();
@@ -15,6 +16,7 @@ class ResponsesTest extends WebTestCase
         $this->assertSelectorTextContains('h1', 'Please sign in');
     }
 
+    // testRegisterPageResponse
     public function testRegisterPageResponse(): void
     {
         $client = static::createClient();

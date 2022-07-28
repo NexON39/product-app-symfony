@@ -28,6 +28,27 @@ class ProductControllerFormsTest extends WebTestCase
         $this->assertTrue($crawler->filter('html:contains("Twój produkt został dodany")')->count() > 0);
     }
 
+    // testAddNewProductWithNullDataByTestUser
+    public function testAddNewProductWithNullDataByTestUser(): void
+    {
+        $client = static::createClient();
+        $userRepository = static::getContainer()->get(UserRepository::class);
+
+        $client->loginUser($userRepository->findOneByEmail('smth@op.pl'));
+
+        $crawler = $client->request('GET', '/product');
+
+        $form = $crawler->selectButton('Add')->form();
+
+        $form['product_add[productName]'] = '';
+
+        $client->submit($form);
+
+        $crawler = $client->request('GET', '/product');
+
+        $this->assertTrue($crawler->filter('html:contains("Input nie możę być wartością NULL")')->count() > 0);
+    }
+
     // testEditProductByTestUser
     public function testEditProductByTestUser(): void
     {
@@ -48,6 +69,28 @@ class ProductControllerFormsTest extends WebTestCase
         $crawler = $client->request('GET', '/product');
 
         $this->assertTrue($crawler->filter('html:contains("Twój produkt został edytowany")')->count() > 0);
+    }
+
+    // testEditProductWithNegativeNumberByTestUser
+    public function testEditProductWithNegativeNumberByTestUser(): void
+    {
+        $client = static::createClient();
+        $userRepository = static::getContainer()->get(UserRepository::class);
+
+        $client->loginUser($userRepository->findOneByEmail('smth@op.pl'));
+
+        $crawler = $client->request('GET', '/product/edit/1');
+
+        $form = $crawler->selectButton('Edit')->form();
+
+        $form['product_edit[productName]'] = 'EditProduct';
+        $form['product_edit[price]'] = -2;
+
+        $client->submit($form);
+
+        $crawler = $client->request('GET', '/product');
+
+        $this->assertTrue($crawler->filter('html:contains("Liczba nie możę być ujemna")')->count() > 0);
     }
 
     // testReviewProductByTestUser

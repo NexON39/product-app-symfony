@@ -19,6 +19,7 @@ class AuthTest extends WebTestCase
         $this->assertResponseIsSuccessful();
     }
 
+    // testAnUnloggedUserCanSeeProducts
     public function testAnUnloggedUserCanSeeProducts()
     {
         $client = static::createClient();
@@ -38,6 +39,7 @@ class AuthTest extends WebTestCase
         $this->assertResponseIsSuccessful();
     }
 
+    // testAnUserCanSeeNoExistingProductReview
     public function testAnUserCanSeeNoExistingProductReview()
     {
         $client = static::createClient();
@@ -49,6 +51,7 @@ class AuthTest extends WebTestCase
         $this->assertResponseRedirects('/product');
     }
 
+    // testAnUnloggedUserCanSeeProductsReview
     public function testAnUnloggedUserCanSeeProductsReview()
     {
         $client = static::createClient();
@@ -56,6 +59,7 @@ class AuthTest extends WebTestCase
         $this->assertResponseRedirects('/login');
     }
 
+    // testAnUnloggedUserCanSeeNoExistingProductsReview
     public function testAnUnloggedUserCanSeeNoExistingProductsReview()
     {
         $client = static::createClient();
@@ -63,6 +67,8 @@ class AuthTest extends WebTestCase
         $this->assertResponseRedirects('/login');
     }
 
+
+    // testAnLoggedUserCanOpinionHisOwnProduct
     public function testAnLoggedUserCanOpinionHisOwnProduct()
     {
         $client = static::createClient();
@@ -74,6 +80,8 @@ class AuthTest extends WebTestCase
         $this->assertResponseRedirects('/product');
     }
 
+
+    // testAnLoggedUserCanOpinionNotHisProduct
     public function testAnLoggedUserCanOpinionNotHisProduct()
     {
         $client = static::createClient();
@@ -97,6 +105,7 @@ class AuthTest extends WebTestCase
         $this->assertResponseIsSuccessful();
     }
 
+    // testAnUserCanEditNoExistingProductReview
     public function testAnUserCanEditNoExistingProductReview()
     {
         $client = static::createClient();
@@ -108,6 +117,7 @@ class AuthTest extends WebTestCase
         $this->assertResponseRedirects('/product');
     }
 
+    // testAnUnloggedUserCanEditProductsReview
     public function testAnUnloggedUserCanEditProductsReview()
     {
         $client = static::createClient();
@@ -115,6 +125,7 @@ class AuthTest extends WebTestCase
         $this->assertResponseRedirects('/login');
     }
 
+    // testAnUnloggedUserCanEditNoExistingProductsReview
     public function testAnUnloggedUserCanEditNoExistingProductsReview()
     {
         $client = static::createClient();
@@ -122,6 +133,7 @@ class AuthTest extends WebTestCase
         $this->assertResponseRedirects('/login');
     }
 
+    // testAnLoggedUserCanEditHisOwnProduct
     public function testAnLoggedUserCanEditHisOwnProduct()
     {
         $client = static::createClient();
@@ -133,6 +145,7 @@ class AuthTest extends WebTestCase
         $this->assertResponseIsSuccessful();
     }
 
+    // testAnLoggedUserCanEditNotHisProduct
     public function testAnLoggedUserCanEditNotHisProduct()
     {
         $client = static::createClient();
@@ -157,6 +170,7 @@ class AuthTest extends WebTestCase
         $this->assertResponseRedirects();
     }
 
+    // testAnUnLoggedUserCanLogout
     public function testAnUnLoggedUserCanLogout()
     {
         $client = static::createClient();
